@@ -1,8 +1,16 @@
 package agh.cs.oop.airlyconsoleclient;
 
+import agh.cs.oop.airlyconsoleclient.airlyapi.AirlyApi;
+import agh.cs.oop.airlyconsoleclient.airlyapi.AirlyApiFactory;
+import agh.cs.oop.airlyconsoleclient.airlyapi.AllMeasurements;
 import org.apache.commons.cli.*;
+import retrofit2.Call;
+import retrofit2.Response;
 
+import java.io.IOException;
 import java.util.Optional;
+
+import static java.lang.System.*;
 
 public class Application {
 
@@ -23,9 +31,9 @@ public class Application {
         if (args.length == 0) {
             HelpFormatter formatter = new HelpFormatter();
             formatter.printHelp("java -jar airly-console-client.jar", options);
-            System.out.println();
-            System.out.println(MSG_MISSING_SENSOR_ID_OR_COORDINATES);
-            System.out.println(MSG_MISSING_API_KEY);
+            out.println();
+            out.println(MSG_MISSING_SENSOR_ID_OR_COORDINATES);
+            out.println(MSG_MISSING_API_KEY);
             return;
         }
 
@@ -34,7 +42,7 @@ public class Application {
         try {
             cmd = parser.parse(options, args);
         } catch (ParseException e) {
-            System.err.println(MSG_INVALID_ARGS);
+            err.println(MSG_INVALID_ARGS);
             return;
         }
 
@@ -58,12 +66,12 @@ public class Application {
             if (longitudeText != null)
                 longitude = Double.parseDouble(longitudeText);
         } catch (NumberFormatException e) {
-            System.err.println(MSG_INVALID_ARGS);
+            err.println(MSG_INVALID_ARGS);
             return;
         }
 
         if (apiKey == null) {
-            System.err.println(MSG_MISSING_API_KEY);
+            err.println(MSG_MISSING_API_KEY);
             return;
         }
 
@@ -74,12 +82,46 @@ public class Application {
         } else if (sensorId == null && latitude != null && longitude != null) {
             arguments = new Arguments(apiKey, latitude, longitude, history);
         } else {
-            System.err.println(MSG_MISSING_SENSOR_ID_OR_COORDINATES);
+            err.println(MSG_MISSING_SENSOR_ID_OR_COORDINATES);
             return;
         }
 
-        Core core = new Core(arguments);
-        core.run();
+        Call<AllMeasurements> call = prepareCall(arguments);
+
+        Response<AllMeasurements> response;
+        try {
+            response = call.execute();
+        } catch (IOException e) {
+            err.println("Failed to connect to the server: " + e.getMessage());
+            return;
+        } catch (Exception e) {
+            err.println("An unexpected error occurred during creating the request or decoding the response");
+            return;
+        }
+
+        if (response.code() == 401) {
+            err.println("Invalid API Key (server returned 401 Unauthorized)");
+            return;
+        }
+
+        if (!response.isSuccessful()) {
+            err.println(String.format("Server returned: %d %s", response.code(), response.message()));
+            return;
+        }
+
+        AsciiPrinter printer = new AsciiPrinter();
+        printer.print(response.body(), arguments);
+    }
+
+    private static Call<AllMeasurements> prepareCall(Arguments arguments) {
+        AirlyApi api = new AirlyApiFactory().createAirlyApi();
+
+        if (arguments.sensorId != null) {
+            return api.sensorMeasurements(arguments.apiKey, arguments.sensorId);
+        } else {
+            //noinspection ConstantConditions
+            return api.mapPointMeasurements(arguments.apiKey, arguments.latitude, arguments.longitude);
+        }
     }
 
 }

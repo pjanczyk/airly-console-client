@@ -2,6 +2,8 @@ package agh.cs.oop.airlyconsoleclient;
 
 import org.apache.commons.cli.*;
 
+import java.util.Optional;
+
 public class Application {
 
     private static final String MSG_INVALID_ARGS = "Invalid format of arguments";
@@ -36,26 +38,48 @@ public class Application {
             return;
         }
 
-        String apiKey = cmd.getOptionValue("api-key");
-        String sensorId = cmd.getOptionValue("sensor-id");
-        String latitude = cmd.getOptionValue("latitude");
-        String longitude = cmd.getOptionValue("longitude");
+        String apiKey = Optional.ofNullable(cmd.getOptionValue("api-key"))
+                .or(() -> Optional.ofNullable(System.getenv("API_KEY")))
+                .orElse(null);
+        String sensorIdText = cmd.getOptionValue("sensor-id");
+        String latitudeText = cmd.getOptionValue("latitude");
+        String longitudeText = cmd.getOptionValue("longitude");
         boolean history = cmd.hasOption("history");
 
-        if (apiKey == null) {
-            apiKey = System.getenv("API_KEY");
+        Integer sensorId = null;
+        Double latitude = null;
+        Double longitude = null;
+
+        try {
+            if (sensorIdText != null)
+                sensorId = Integer.parseUnsignedInt(sensorIdText);
+            if (latitudeText != null)
+                latitude = Double.parseDouble(latitudeText);
+            if (longitudeText != null)
+                longitude = Double.parseDouble(longitudeText);
+        } catch (NumberFormatException e) {
+            System.err.println(MSG_INVALID_ARGS);
+            return;
         }
 
         if (apiKey == null) {
             System.err.println(MSG_MISSING_API_KEY);
+            return;
         }
+
+        Arguments arguments;
 
         if (sensorId != null && latitude == null && longitude == null) {
-
+            arguments = new Arguments(apiKey, sensorId, history);
         } else if (sensorId == null && latitude != null && longitude != null) {
-
+            arguments = new Arguments(apiKey, latitude, longitude, history);
         } else {
-            System.err.println(MSG_INVALID_ARGS);
+            System.err.println(MSG_MISSING_SENSOR_ID_OR_COORDINATES);
+            return;
         }
+
+        Core core = new Core(arguments);
+        core.run();
     }
+
 }

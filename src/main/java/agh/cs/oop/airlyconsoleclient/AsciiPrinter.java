@@ -17,9 +17,9 @@ public class AsciiPrinter {
     private static final double PM25_NORM = 25.0;
     private static final double PM10_NORM = 50.0;
 
-    private static String ESC_RESET = "\033[0m";
+    private static final String ESC_RESET = "\033[0m";
 
-    private static String[][] BIG_DIGITS = {{
+    private static final String[][] BIG_DIGITS = {{
             "╭────╮",
             "│    │",
             "│    │",

@@ -2,6 +2,7 @@ package agh.cs.oop.airlyconsoleclient.airlyapi;
 
 import java.util.Date;
 
+@SuppressWarnings("unused")
 public class MeasurementWithTime {
     private Date fromDateTime;
     private Date tillDateTime;

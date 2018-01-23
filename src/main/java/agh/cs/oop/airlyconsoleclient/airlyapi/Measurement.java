@@ -1,5 +1,6 @@
 package agh.cs.oop.airlyconsoleclient.airlyapi;
 
+@SuppressWarnings({"unused", "FieldCanBeLocal"})
 public class Measurement {
     private double airQualityIndex;
     private double pm1;

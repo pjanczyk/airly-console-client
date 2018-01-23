@@ -8,6 +8,7 @@ import java.util.List;
  * Response of "/v1/sensor/measurements" and "/v1/mapPoint/measurements"
  * Deserialized by GSON.
  */
+@SuppressWarnings("unused")
 public class AllMeasurements {
     private Measurement currentMeasurements;
     private MeasurementWithTime[] history;

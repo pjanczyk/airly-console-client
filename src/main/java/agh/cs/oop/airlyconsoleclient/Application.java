@@ -109,6 +109,14 @@ public class Application {
             return;
         }
 
+        AllMeasurements measurements = response.body();
+
+        if (measurements.getCurrentMeasurements() == null
+                || measurements.getCurrentMeasurements().getPollutionLevel() == -1) {
+            err.println("No results found");
+            return;
+        }
+
         AsciiPrinter printer = new AsciiPrinter();
         printer.print(response.body(), arguments);
     }

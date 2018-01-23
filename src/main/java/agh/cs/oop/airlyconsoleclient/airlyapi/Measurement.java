@@ -8,7 +8,7 @@ public class Measurement {
     private double pressure;
     private double humidity;
     private double temperature;
-    private int pollutionLevel;
+    private int pollutionLevel = -1;
 
     public double getAirQualityIndex() {
         return airQualityIndex;

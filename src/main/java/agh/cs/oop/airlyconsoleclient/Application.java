@@ -21,6 +21,7 @@ public class Application {
             "Either '--sensor-id' or '--latitude' and '--longitude' must be specified.";
 
     public static void main(String[] args) {
+        // #1 PARSE ARGUMENTS
         Options options = new Options();
         options.addOption(null, "api-key", true, "Airly API key");
         options.addOption(null, "sensor-id", true, "Sensor ID");
@@ -31,16 +32,15 @@ public class Application {
         if (args.length == 0) {
             HelpFormatter formatter = new HelpFormatter();
             formatter.printHelp("java -jar airly-console-client.jar", options);
-            out.println();
-            out.println(MSG_MISSING_SENSOR_ID_OR_COORDINATES);
-            out.println(MSG_MISSING_API_KEY);
+            err.println();
+            err.println(MSG_MISSING_SENSOR_ID_OR_COORDINATES);
+            err.println(MSG_MISSING_API_KEY);
             return;
         }
 
-        CommandLineParser parser = new DefaultParser();
         CommandLine cmd;
         try {
-            cmd = parser.parse(options, args);
+            cmd = new DefaultParser().parse(options, args);
         } catch (ParseException e) {
             err.println(MSG_INVALID_ARGS);
             return;
@@ -86,6 +86,7 @@ public class Application {
             return;
         }
 
+        // #2 GET DATA FROM SERVER
         Call<AllMeasurements> call = prepareCall(arguments);
 
         Response<AllMeasurements> response;
@@ -111,12 +112,14 @@ public class Application {
 
         AllMeasurements measurements = response.body();
 
-        if (measurements.getCurrentMeasurements() == null
+        if (measurements == null
+                || measurements.getCurrentMeasurements() == null
                 || measurements.getCurrentMeasurements().getPollutionLevel() == -1) {
             err.println("No results found");
             return;
         }
 
+        // #3 PRINT DATA
         AsciiPrinter printer = new AsciiPrinter();
         printer.print(response.body(), arguments);
     }

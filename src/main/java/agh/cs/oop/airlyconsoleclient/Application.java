@@ -20,18 +20,18 @@ public class Application {
     private static final String MSG_MISSING_SENSOR_ID_OR_COORDINATES =
             "Either '--sensor-id' or '--latitude' and '--longitude' must be specified.";
 
+    private static final Options COMMAND_OPTIONS = new Options()
+            .addOption(null, "api-key", true, "Airly API key")
+            .addOption(null, "sensor-id", true, "Sensor ID")
+            .addOption(null, "latitude", true, "Latitude coordinate of an area")
+            .addOption(null, "longitude", true, "Longitude coordinate of an area.")
+            .addOption(null, "history", false, "Displays history of measurement");
+
     public static void main(String[] args) {
         // #1 PARSE ARGUMENTS
-        Options options = new Options();
-        options.addOption(null, "api-key", true, "Airly API key");
-        options.addOption(null, "sensor-id", true, "Sensor ID");
-        options.addOption(null, "latitude", true, "Latitude coordinate of an area");
-        options.addOption(null, "longitude", true, "Longitude coordinate of an area.");
-        options.addOption(null, "history", false, "Displays history of measurement");
-
         if (args.length == 0) {
             HelpFormatter formatter = new HelpFormatter();
-            formatter.printHelp("java -jar airly-console-client.jar", options);
+            formatter.printHelp("java -jar airly-console-client.jar", COMMAND_OPTIONS);
             err.println();
             err.println(MSG_MISSING_SENSOR_ID_OR_COORDINATES);
             err.println(MSG_MISSING_API_KEY);
@@ -40,7 +40,7 @@ public class Application {
 
         CommandLine cmd;
         try {
-            cmd = new DefaultParser().parse(options, args);
+            cmd = new DefaultParser().parse(COMMAND_OPTIONS, args);
         } catch (ParseException e) {
             err.println(MSG_INVALID_ARGS);
             return;
@@ -118,8 +118,7 @@ public class Application {
         }
 
         // #3 PRINT DATA
-        AsciiPrinter printer = new AsciiPrinter();
-        printer.print(response.body(), arguments);
+        new AsciiPrinter().print(response.body(), arguments);
     }
 
     private static Call<AllMeasurements> prepareCall(Arguments arguments) {

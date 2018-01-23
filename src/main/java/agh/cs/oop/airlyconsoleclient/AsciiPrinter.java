@@ -99,6 +99,7 @@ public class AsciiPrinter {
     };
 
     public void print(AllMeasurements allMeasurements, Arguments arguments) {
+        // Print sensor ID or latitude & longitude
         if (arguments.sensorId != null) {
             out.println("Sensor ID: " + arguments.sensorId);
         } else if (arguments.latitude != null && arguments.longitude != null) {
@@ -111,70 +112,18 @@ public class AsciiPrinter {
             ));
         }
 
-        if (!arguments.history) {
-            printMeasurement(allMeasurements.getCurrentMeasurements(), LocalDateTime.now());
+        // Print current measures or history (charts)
+        if (arguments.history && allMeasurements.getHistory() != null || allMeasurements.getHistory().size() > 0) {
+            printHistory(allMeasurements);
+        } else if (!arguments.history && allMeasurements.getCurrentMeasurements() != null
+                && allMeasurements.getCurrentMeasurements().getPollutionLevel() != -1) {
+            printSingleMeasurement(allMeasurements.getCurrentMeasurements(), LocalDateTime.now());
         } else {
-            if (allMeasurements.getHistory() == null || allMeasurements.getHistory().size() == 0) return;
-
-            LocalDateTime historyStartDate = allMeasurements.getHistory()
-                    .get(0)
-                    .getFromDateTime()
-                    .toInstant()
-                    .atZone(ZoneId.systemDefault())
-                    .toLocalDateTime();
-
-            LocalDateTime historyEndDate = allMeasurements.getHistory()
-                    .get(allMeasurements.getHistory().size() - 1)
-                    .getFromDateTime()
-                    .toInstant()
-                    .atZone(ZoneId.systemDefault())
-                    .toLocalDateTime()
-                    .plusHours(1);
-
-            List<Measurement> history = allMeasurements.getHistory().stream()
-                    .map(MeasurementWithTime::getMeasurements)
-                    .collect(toList());
-            history.add(allMeasurements.getCurrentMeasurements());
-
-            // CAQI chart
-            double[] values = history.stream()
-                    .mapToDouble(Measurement::getAirQualityIndex)
-                    .toArray();
-            double max = DoubleStream.of(values).max().orElse(100);
-            Integer[] colors = history.stream()
-                    .mapToInt(Measurement::getPollutionLevel)
-                    .mapToObj(this::getPollutionLevelColor)
-                    .toArray(Integer[]::new);
-
-            printChartTitle("CAQI");
-            printChart(values, 0.0, max, 10.0, colors);
-            printChartTimeline(historyStartDate, historyEndDate);
-            out.println();
-
-            // PM2.5 chart
-            values = history.stream()
-                    .mapToDouble(Measurement::getPm25)
-                    .toArray();
-            max = DoubleStream.of(values).max().orElse(200);
-
-            printChartTitle("PM2.5 [μg/m³]");
-            printChart(values, 0.0, max, 10.0, null);
-            printChartTimeline(historyStartDate, historyEndDate);
-            out.println();
-
-            // PM10 chart
-            values = history.stream()
-                    .mapToDouble(Measurement::getPm10)
-                    .toArray();
-            max = DoubleStream.of(values).max().orElse(100);
-
-            printChartTitle("PM10 [μg/m³]");
-            printChart(values, 0.0, max, 20.0, null);
-            printChartTimeline(historyStartDate, historyEndDate);
+            err.println("No results");
         }
     }
 
-    private void printMeasurement(Measurement measurement, LocalDateTime dateTime) {
+    private void printSingleMeasurement(Measurement measurement, LocalDateTime dateTime) {
         String dayOfWeek = DAY_OF_WEEK_FORMATTER.format(dateTime);
         String date = DATE_FORMATTER.format(dateTime);
         String time = TIME_FORMATTER.format(dateTime);
@@ -211,10 +160,9 @@ public class AsciiPrinter {
          * │              │  ╷    ╷  ╶────╮  ╭────╮         PM2.5:  999 μg/m³  500%  │
          * │    Monday    │  │    │       │  │    │          PM10:  999 μg/m³  500%  │
          * │ 22 September │  ╰────┤  ╭────╯  ╰────┤   TEMPERATURE:  -50°C            │
-         * │   12:00 AM   │       │  │            │      PRESSURE:  1014 hPa         │
+         * │    12:00     │       │  │            │      PRESSURE:  1014 hPa         │
          * │              │       ╵  ╰────╴  ╶────╯      HUMIDITY:  100%             │
          * └──────────────┴──────────────────────────────────────────────────────────┘
-         * █▄
          */
         out.println(String.format("" +
                         "┌──────────────┬──────────────────────────────────────────────────────────┐\n" +
@@ -242,6 +190,64 @@ public class AsciiPrinter {
         ));
     }
 
+    private void printHistory(AllMeasurements allMeasurements) {
+        LocalDateTime startDate = allMeasurements.getHistory()
+                .get(0)
+                .getFromDateTime()
+                .toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime();
+
+        LocalDateTime endDate = allMeasurements.getHistory()
+                .get(allMeasurements.getHistory().size() - 1)
+                .getFromDateTime()
+                .toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime()
+                .plusHours(1);
+
+        List<Measurement> measurements = allMeasurements.getHistory().stream()
+                .map(MeasurementWithTime::getMeasurements)
+                .collect(toList());
+        measurements.add(allMeasurements.getCurrentMeasurements());
+
+        // CAQI chart
+        double[] values = measurements.stream()
+                .mapToDouble(Measurement::getAirQualityIndex)
+                .toArray();
+        double max = DoubleStream.of(values).max().orElse(100);
+        Integer[] colors = measurements.stream()
+                .mapToInt(Measurement::getPollutionLevel)
+                .mapToObj(this::getPollutionLevelColor)
+                .toArray(Integer[]::new);
+
+        printChartTitle("CAQI");
+        printChart(values, 0.0, max, 10.0, colors);
+        printChartTimeline(startDate, endDate);
+        out.println();
+
+        // PM2.5 chart
+        values = measurements.stream()
+                .mapToDouble(Measurement::getPm25)
+                .toArray();
+        max = DoubleStream.of(values).max().orElse(200);
+
+        printChartTitle("PM2.5 [μg/m³]");
+        printChart(values, 0.0, max, 10.0, null);
+        printChartTimeline(startDate, endDate);
+        out.println();
+
+        // PM10 chart
+        values = measurements.stream()
+                .mapToDouble(Measurement::getPm10)
+                .toArray();
+        max = DoubleStream.of(values).max().orElse(100);
+
+        printChartTitle("PM10 [μg/m³]");
+        printChart(values, 0.0, max, 20.0, null);
+        printChartTimeline(startDate, endDate);
+    }
+
     private void printChartTitle(String title) {
         out.println("\033[1m" + StringUtils.center(title, 56) + ESC_RESET);
     }
@@ -255,6 +261,20 @@ public class AsciiPrinter {
     }
 
     private void printChart(double[] values, double min, double max, double step, @Nullable Integer[] colors) {
+        /*
+         * Example:
+         *  90 ┼───────────────────────────────────────────────────
+         *  80 ┼─────────▄─▄─▄─────────────────▄─────▄─▄─▄─█─█─█─█─
+         *  70 ┼─█─█─▄─█─█─█─█─█───▄─▄─▄─█─█─█─█─█─█─█─█─█─█─█─█─█─
+         *  60 ┼─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─
+         *  50 ┼─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─
+         *  40 ┼─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─
+         *  30 ┼─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─
+         *  20 ┼─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─
+         *  10 ┼─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─█─
+         *   0 ┴─▀─▀─▀─▀─▀─▀─▀─▀─▀─▀─▀─▀─▀─▀─▀─▀─▀─▀─▀─▀─▀─▀─▀─▀─▀─
+         */
+
         final String ESC_GRID_FG = "\033[38;5;238m";
 
         int steps = (int) Math.ceil((max - min) / step) + 1;

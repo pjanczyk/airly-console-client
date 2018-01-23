@@ -100,12 +100,10 @@ public class Application {
             return;
         }
 
-        if (response.code() == 401) {
-            err.println("Invalid API Key (server returned 401 Unauthorized)");
-            return;
-        }
-
         if (!response.isSuccessful()) {
+            if (response.code() == 401 || response.code() == 403) {
+                err.print("Invalid API Key: ");
+            }
             err.println(String.format("Server returned: %d %s", response.code(), response.message()));
             return;
         }

@@ -35,6 +35,9 @@ public class Application {
             err.println();
             err.println(MSG_MISSING_SENSOR_ID_OR_COORDINATES);
             err.println(MSG_MISSING_API_KEY);
+            err.println();
+            err.println("Application: © 2018 Piotr Janczyk. License GPLv3+");
+            err.println("Data from Airly.eu");
             return;
         }
 

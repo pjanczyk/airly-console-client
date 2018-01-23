@@ -7,6 +7,8 @@ A terminal-based client of Airly API (https://map.airly.eu/)
 ![Screenshot 1](/../screenshots/screenshots/screenshot1.png?raw=true)
 ![Screenshot 2](/../screenshots/screenshots/screenshot2.png?raw=true)
 
+**Requirements**: 256-colors terminal (VTE)
+
 ```
 usage: java -jar airly-console-client.jar
     --api-key <arg>     Airly API key

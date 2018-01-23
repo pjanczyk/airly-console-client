@@ -113,9 +113,12 @@ public class AsciiPrinter {
         }
 
         // Print current measures or history (charts)
-        if (arguments.history && allMeasurements.getHistory() != null || allMeasurements.getHistory().size() > 0) {
+        if (arguments.history
+                && allMeasurements.getHistory() != null
+                && allMeasurements.getHistory().size() > 0) {
             printHistory(allMeasurements);
-        } else if (!arguments.history && allMeasurements.getCurrentMeasurements() != null
+        } else if (!arguments.history
+                && allMeasurements.getCurrentMeasurements() != null
                 && allMeasurements.getCurrentMeasurements().getPollutionLevel() != -1) {
             printSingleMeasurement(allMeasurements.getCurrentMeasurements(), LocalDateTime.now());
         } else {
